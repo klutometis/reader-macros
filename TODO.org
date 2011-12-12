@@ -1,4 +1,6 @@
 * TODO [[http://briancarper.net/blog/449/][Example]] from Brian Carper
+  https://github.com/clojure/clojure/blob/master/src/jvm/clojure/lang/LispReader.java#L82
+
   #+BEGIN_SRC clojure :tangle macros.clj :shebang #!/usr/bin/env clj
     (use 'add-classpath.core)
     (add-classpath "lib/*")
@@ -8,6 +10,12 @@
     
     (defn dispatch-reader-macro [ch fun]
       (let [dm (.get (doto (.getDeclaredField clojure.lang.LispReader "dispatchMacros")
+                       (.setAccessible true))
+                     nil)]
+        (aset dm (int ch) fun)))
+    
+    (defn reader-macro [ch fun]
+      (let [dm (.get (doto (.getDeclaredField clojure.lang.LispReader "macros")
                        (.setAccessible true))
                      nil)]
         (aset dm (int ch) fun)))
@@ -22,7 +30,9 @@
           (throw (Exception. (str "Reader barfed on " (char c)))))))
     
     (dispatch-reader-macro \U uppercase-string)
+    (reader-macro \U uppercase-string)
     
-    (is (= #U"Foo bar BAZ" "FOO BAR BAZ"))
+    (is (= #U"Foo bar BAZ" "FOO BAR BAZ")
+        (= U"Foo bar BAZ" "FOO BAR BAZ"))
     
   #+END_SRC
