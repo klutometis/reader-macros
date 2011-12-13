@@ -33,6 +33,40 @@
     (reader-macro \U uppercase-string)
     
     (is (= #U"Foo bar BAZ" "FOO BAR BAZ")
-        (= U"Foo bar BAZ" "FOO BAR BAZ"))
-    
+        (= U"Foo bar BAZ" "FOO BAR BAZ"))    
+  #+END_SRC
+* TODO API
+  According to [[http://www.bookshelf.jp/texi/onlisp/onlisp_18.html][this]], we have =set-macro-character=,
+  =set-dispatch-macro-character=, etc.:
+
+  - [[http://www.lispworks.com/documentation/HyperSpec/Body/f_set_ma.htm#set-macro-character][(set-macro-character char new-function)]]
+  - [[http://www.lispworks.com/documentation/HyperSpec/Body/f_set_ma.htm#get-macro-character][(get-macro-character char)]]
+  - [[http://www.lispworks.com/documentation/HyperSpec/Body/f_set__1.htm#set-dispatch-macro-character][(set-dispatch-macro-character disp-char sub-char new-function)]]
+  - [[http://www.lispworks.com/documentation/HyperSpec/Body/f_set__1.htm#get-dispatch-macro-character][(get-dispatch-macro-character char)]]
+  - [[http://www.lispworks.com/documentation/HyperSpec/Body/f_mk_dis.htm#make-dispatch-macro-character][(make-dispatch-macro-character char)]]
+
+  where =new-function= has the signatures =(lambda (stream char)
+  . . .)= and =(lambda (stream disp-char sub-char))=,
+  respectively. (So, roughly on analogy with Clojure's read-table.)
+
+  Like [[https://github.com/clojure/clojure/blob/master/src/jvm/clojure/lang/LispReader.java#L100][this]], maybe =make-dispatch-macro-character= has the effect:
+
+  #+BEGIN_SRC java
+    macros['#'] = new DispatchReader();
+  #+END_SRC
+
+  Do we want to allow an optional read-table? Hmm; what's the point?
+  It's [[https://github.com/clojure/clojure/blob/master/src/jvm/clojure/lang/LispReader.java#L58][static]] in =LispReader=.
+
+  E.g. [[https://github.com/clojure/clojure/blob/master/src/jvm/clojure/lang/LispReader.java#L445][StringReader]] has the signature:
+
+  #+BEGIN_SRC java
+    public static class StringReader extends AFn{
+        public Object invoke(Object reader, Object doublequote) {
+            StringBuilder sb = new StringBuilder();
+            Reader r = (Reader) reader;
+            // . . .
+            return stringBuilder.toString();
+        }
+    }
   #+END_SRC
