@@ -70,3 +70,18 @@
         }
     }
   #+END_SRC
+* TODO Convenience readers
+  See e.g. [[https://github.com/clojure/clojure/blob/master/src/jvm/clojure/lang/LispReader.java#L84][string-reader]]:
+
+  #+BEGIN_SRC clojure
+    ;;; This doesn't work (we need an instance to get the method).
+    (def string-reader LispReader$StringReader/invoke)
+    
+    ;;; This does, but it's ugly; and it's difficult to invoke.
+    (get (:declaredMethods (bean LispReader$StringReader)) 0)
+    
+    ;;; Maybe this?
+    (let [string-reader (new LispReader$StringReader)]
+      (defn (read-string stream char)
+        (.invoke string-reader stream char)))
+  #+END_SRC
