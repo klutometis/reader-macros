@@ -127,7 +127,10 @@
                            LispReader$DiscardReader
                            ))
     
-    
+    (let [reader (LispReader$StringReader.)]
+      (def read
+        (λ [character reader]
+          (.invoke reader reader character))))
     
     (let [macros (.getDeclaredField LispReader "macros")]
       (.setAccessible macros true)
@@ -162,15 +165,14 @@
     (def class->reader
       (λ [class]
         (let [predicates (drop-last (re-seq #"[A-Z][a-z]+" class))]
-          (format "read-%s" (join "-" predicates)))))
+          (format "read-%s" (join "-" (map lower-case predicates))))))
     
     (debug
      (map class->reader
-          (map #(re-matches #"[A-Z][^A-Z]+" %)
-               (filter #(re-find #"Reader$" %)
-                       (map #(.getSimpleName %)
-                            (into '()
-                                  (:declaredClasses (bean LispReader))))))))
+          (filter #(re-find #"Reader$" %)
+                  (map #(.getSimpleName %)
+                       (into '()
+                             (:declaredClasses (bean LispReader)))))))
     
   #+END_SRC
 
