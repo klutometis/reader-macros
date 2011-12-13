@@ -125,18 +125,29 @@
                            LispReader$CommentReader
                            LispReader$UnreadableReader
                            LispReader$DiscardReader
-                           ))
-    
-    (let [reader (LispReader$StringReader.)]
-      (def read
-        (λ [character reader]
-          (.invoke reader reader character))))
+                           AFn))
     
     (let [macros (.getDeclaredField LispReader "macros")]
       (.setAccessible macros true)
-      (deλ set-macro-character [character read]
+      (defλ set-macro-character [character read]
         (aset macros (int character) read)))
     
+    (let [macro-string-reader (LispReader$StringReader.)]
+      (defλ macro-read-string [character reader]
+        (debug character reader)
+        (.invoke macro-string-reader reader character)))
+    
+    (let [macros (.getDeclaredField LispReader "macros")]
+      (.setAccessible macros true)
+      (defλ set-macro-character [character read]
+        (debug aset)
+        (aset macros
+              (int character)
+              read)))
+    
+    ;; (set-macro-character \" macro-read-string)
+    (debug (class macro-read-string)
+           (class (fn [a b] 2)))
   #+END_SRC
 * TODO Define readers programmatically
   If we do this, funny enough, we don't actually have a guaranteed
