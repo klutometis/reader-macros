@@ -1,2 +1,4 @@
 Let's see if we can't inspire a few [[http://briancarper.net/blog/449/][pitchforks]] with a reader-macro
 package for Clojure.
+
+May Zeus forgive us for opening this [[http://en.wikipedia.org/wiki/Pandora's_box][πίθος]], &c.
