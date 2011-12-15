@@ -149,7 +149,7 @@
     (debug (class macro-read-string)
            (class (fn [a b] 2)))
   #+END_SRC
-* TODO Define readers programmatically
+* TODO Define readers programmatically.
   If we do this, funny enough, we don't actually have a guaranteed
   API; that's bad, isn't it?
 
@@ -160,6 +160,8 @@
     (use 'debug.core)
     (use 'lambda.core)
     (use 'clojure.string)
+    (use 'useful.seq)
+    (use 'cadr.core)
     
     (import 'clojure.lang.LispReader)
     (import 'java.util.regex.Pattern)
@@ -177,35 +179,44 @@
       (λ [class]
         (map lower-case (drop-last (re-seq #"[A-Z][a-z]+" class)))))
     
-    (def class->class-reader
-      (λ [class]
-        (symbol (format "macro-%s-reader" (join "-" (class->predicates class))))))
-    
     (def class->read-class
       (λ [class]
         (symbol (format "macro-read-%s" (join "-" (class->predicates class))))))
     
+    (def nullary-constructor
+      (λ [class]
+        (loop [constructors (into '() (:declaredConstructors (bean class)))]
+          (if (empty? constructors)
+            false
+            (let [constructor (car constructors)]
+              (if (zero? (count (:parameterTypes (bean constructor))))
+                constructor
+                (recur (cdr constructors))))))))
+    
+    (def reader-classes
+      (filter (λ [class]
+                (and (re-find #"Reader$" (.getSimpleName class))
+                     (nullary-constructor class)))
+              (into '() (:declaredClasses (bean LispReader)))))
+    
     (def readers
-      (λ []
-        (map (λ [class]
-               (let [simple-name (.getSimpleName class)]
-                 {:read-class (class->read-class simple-name)
-                  :class-reader (class->class-reader simple-name)
-                  :class (symbol (.getName class))}))
-             (filter #(re-find #"Reader$" (.getSimpleName %))
-                     (into '() (:declaredClasses (bean LispReader)))))))
+      (map (λ [class]
+             {:class (symbol (.getName class))
+              :constructor (nullary-constructor class)
+              :read-class (class->read-class (.getSimpleName class))})
+           reader-classes))
     
     (defmacro def-read-macros []
       `(do ~@(map (λ [{class :class
-                       class-reader :class-reader
+                       constructor :constructor
                        read-class :read-class}]
                     `(let [class-reader# (new ~class)]
                        (def ~read-class
                          (λ [character# reader#]
                            (.invoke class-reader# reader# character#)))))
-                  (readers))))
+                  readers)))
     
-    #_(def-read-macros)
+    (def-read-macros)
     
     (debug
      #_(map class->reader
@@ -221,9 +232,12 @@
             (into '()
                   (:declaredClasses (bean LispReader))))
      #_(macroexpand '(def-read-macros))
-     (map #(map :parameterTypes(map bean (into '() %)))
-          (map :declaredConstructors (map bean (:declaredClasses (bean LispReader))))))
-    
+     #_(map #(map count (map :parameterTypes(map bean (into '() %))))
+          (map :declaredConstructors (map bean (:declaredClasses (bean LispReader)))))
+     #_(map #(map bean (into '() %)) (map :declaredConstructors (map bean (:declaredClasses (bean LispReader)))))
+     #_(map nullary-constructor (:declaredClasses (bean LispReader)))
+     #_readers
+     (macroexpand '(def-read-macros)))
     
   #+END_SRC
 
@@ -250,4 +264,11 @@
               (when (< prevend (.length s))
                 (list (.subSequence s prevend (.length s)))))))
          0)))
+  #+END_SRC
+* TODO Fuck it, let's define the readers manually.
+  We'll do something clever later, if we need to; we have a guaranteed
+  API this way.
+
+  #+BEGIN_SRC clojure :tangle manual-constructors.clj :shebang #!/usr/bin/env clj
+
   #+END_SRC
