@@ -22,7 +22,7 @@
        (reverse (macro-read-string reader quote))))
     
     (println "hello, reader macros")
-    ;;; => sorcam redaer ,olleh
+    => sorcam redaer ,olleh
   #+END_SRC
 
   We've exposed a few utility functions from =clojure.lang.LispReader=
