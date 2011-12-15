@@ -173,17 +173,57 @@
               (recur (cons (re-groups matcher) tokens))
               tokens)))))
     
-    (def class->reader
+    (def class->predicates
       (λ [class]
-        (let [predicates (drop-last (re-seq #"[A-Z][a-z]+" class))]
-          (format "read-%s" (join "-" (map lower-case predicates))))))
+        (map lower-case (drop-last (re-seq #"[A-Z][a-z]+" class)))))
+    
+    (def class->class-reader
+      (λ [class]
+        (symbol (format "macro-%s-reader" (join "-" (class->predicates class))))))
+    
+    (def class->read-class
+      (λ [class]
+        (symbol (format "macro-read-%s" (join "-" (class->predicates class))))))
+    
+    (def readers
+      (λ []
+        (map (λ [class]
+               (let [simple-name (.getSimpleName class)]
+                 {:read-class (class->read-class simple-name)
+                  :class-reader (class->class-reader simple-name)
+                  :class (symbol (.getName class))}))
+             (filter #(re-find #"Reader$" (.getSimpleName %))
+                     (into '() (:declaredClasses (bean LispReader)))))))
+    
+    (defmacro def-read-macros []
+      `(do ~@(map (λ [{class :class
+                       class-reader :class-reader
+                       read-class :read-class}]
+                    `(let [class-reader# (new ~class)]
+                       (def ~read-class
+                         (λ [character# reader#]
+                           (.invoke class-reader# reader# character#)))))
+                  (readers))))
+    
+    #_(def-read-macros)
     
     (debug
-     (map class->reader
+     #_(map class->reader
           (filter #(re-find #"Reader$" %)
                   (map #(.getSimpleName %)
                        (into '()
-                             (:declaredClasses (bean LispReader)))))))
+                             (:declaredClasses (bean LispReader))))))
+     #_(map (λ [class]
+              (let [simple-name (.getSimpleName class)]
+                {:read-class (class->read-class simple-name)
+                 :class-reader (class->class-reader simple-name)
+                 :class (symbol (.getName class))}))
+            (into '()
+                  (:declaredClasses (bean LispReader))))
+     #_(macroexpand '(def-read-macros))
+     (map #(map :parameterTypes(map bean (into '() %)))
+          (map :declaredConstructors (map bean (:declaredClasses (bean LispReader))))))
+    
     
   #+END_SRC
 
