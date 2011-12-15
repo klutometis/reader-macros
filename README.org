@@ -1,4 +1,51 @@
-Let's see if we can't inspire a few [[http://briancarper.net/blog/449/][pitchforks]] with a reader-macro
-package for Clojure.
+* Motivation
+  
+  Let's see if we can't inspire a few [[http://briancarper.net/blog/449/][pitchforks]] with a reader-macro
+  package for Clojure.
 
-May Zeus forgive us for opening this [[http://en.wikipedia.org/wiki/Pandora's_box][πίθος]], &c.
+  May Zeus forgive us for opening this [[http://en.wikipedia.org/wiki/Pandora's_box][πίθος]], &c.
+
+* Usage
+
+  We tried to stay close to the semantics of [[http://clhs.lisp.se/Body/f_set_ma.htm][set-macro-character]] and
+  [[http://clhs.lisp.se/Body/f_set__1.htm][set-dispatch-macro-character]]: given a character $c$, you define a
+  function $f$ that takes a reader $r$ and $c$; and returns an object
+  that you've parsed from $r$.
+
+  To define a reader macro, for instance, that reverses strings; try:
+
+  #+BEGIN_SRC clojure
+    (use 'clojure.string)
+    
+    (set-macro-character \"
+     (fn [reader quote]
+       (reverse (macro-read-string reader quote))))
+    
+    (println "hello, reader macros")
+    ;;; => sorcam redaer ,olleh
+  #+END_SRC
+
+  We've exposed a few utility functions from =clojure.lang.LispReader=
+  to help extract things from readers:
+
+  - =read-arg=
+  - =read-character=
+  - =read-comment=
+  - =read-deref=
+  - =read-discard=
+  - =read-dispatch=
+  - =read-eval=
+  - =read-fn=
+  - =read-list=
+  - =read-map=
+  - =read-meta=
+  - =read-quote=
+  - =read-regex=
+  - =read-set=
+  - =read-string=
+  - =read-syntax-quote=
+  - =read-unmatched-delimiter=
+  - =read-unquote=
+  - =read-unreadable=
+  - =read-vector=
+  - =read-var=

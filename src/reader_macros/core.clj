@@ -5,6 +5,8 @@
   (:import (clojure.lang LispReader
                          LispReader$WrappingReader)))
 
+;;;; Make the translation tables accessible.
+
 (let [macros (.getDeclaredField LispReader "macros")]
   (.setAccessible macros true)
   (let [macros (.get macros nil)]
@@ -27,9 +29,7 @@
       (λ [character]
         (aget dispatch-macros (int character))))))
 
-(def read-delimited-list
-  (λ [delimiter reader recursive?]
-    (LispReader/readDelimitedList delimiter reader recursive?)))
+;;;; Dynamically define convenience functions.
 
 (def class->predicates
   (λ [class]
@@ -88,3 +88,17 @@
   (def macro-read-quote
     (λ [reader character]
       (.invoke macro-quote-reader reader character))))
+
+;;;; Some more utility functions from LispReader
+
+(def read-delimited-list
+  (λ [delimiter reader recursive?]
+    (LispReader/readDelimitedList delimiter reader recursive?)))
+
+;;; We'd have to make this one accessible.
+;; (def read-unicode-char
+;;     (λ
+;;       ([reader character base length exact?]
+;;          (LispReader/readUnicodeChar reader character base length exact?))
+;;       ([token offset length base]
+;;          (LispReader/readUnicodeChar token offset length base))))

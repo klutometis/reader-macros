@@ -199,15 +199,23 @@
         "Only works for lower case letters."
         (λ [string] (apply str (map rotate string)))))
     
-    (defn macro-read-rot13
-      [reader character]
+    (defn macro-read-rot13 [reader character]
       (let [string (macro-read-string reader character)]
         (rot13 string)))
     
-    (set-macro-character \" macro-read-rot13)
-    (println "hello")
+    (defn macro-read-reverse-string [reader character]
+      (reverse (macro-read-string reader character)))
     
-    (is (= "uryyb" (apply str '(\h \e \l \l \o))))
+    ;; (set-macro-character \" macro-read-reverse-string)
+    
+    (set-macro-character
+     \"
+     (fn [reader quote]
+       (reverse (macro-read-string reader quote))))
+    
+    (println "hello, reader macros")
+    
+    ;; (is (= "uryyb" (apply str '(\h \e \l \l \o))))
     
   #+END_SRC
 * TODO Define readers programmatically.
