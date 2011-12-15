@@ -98,33 +98,16 @@
   #+BEGIN_SRC clojure :tangle reader-macros.clj :shebang #!/usr/bin/env clj
     (use 'add-classpath.core)
     (add-classpath "lib/*" "lib/dev/*") 
+    
     (use 'cadr.core)
     (use 'debug.core)
     (use 'clojure.test)
     (use 'lambda.core)
+    (use 'clojure.string)
+    (use 'clojure.test)
     
     (import '(clojure.lang LispReader
-                           LispReader$ArgReader
-                           LispReader$CharacterReader
-                           LispReader$CommentReader
-                           LispReader$CtorReader
-                           LispReader$DiscardReader
-                           LispReader$DispatchReader
-                           LispReader$EvalReader
-                           LispReader$FnReader
-                           LispReader$ListReader
-                           LispReader$MapReader
-                           LispReader$MetaReader
-                           LispReader$RegexReader
-                           LispReader$SetReader
-                           LispReader$StringReader
-                           LispReader$SyntaxQuoteReader
-                           LispReader$UnmatchedDelimiterReader
-                           LispReader$UnquoteReader
-                           LispReader$UnreadableReader
-                           LispReader$VectorReader
-                           LispReader$WrappingReader
-                           LispReader$VarReader))
+                           LispReader$WrappingReader))
     
     (let [macros (.getDeclaredField LispReader "macros")]
       (.setAccessible macros true)
@@ -152,6 +135,14 @@
       (λ [delimiter reader recursive?]
         (LispReader/readDelimitedList delimiter reader recursive?)))
     
+    (def class->predicates
+      (λ [class]
+        (map lower-case (drop-last (re-seq #"[A-Z][a-z]+" class)))))
+    
+    (def class->read-class
+      (λ [class]
+        (symbol (format "macro-read-%s" (join "-" (class->predicates class))))))
+    
     (def nullary-constructor
       (λ [class]
         (loop [constructors (into '() (:declaredConstructors (bean class)))]
@@ -162,117 +153,62 @@
                 constructor
                 (recur (cdr constructors))))))))
     
-    (let [constructor (nullary-constructor LispReader$ArgReader)]
-      (.setAccessible constructor true)
-      (let [macro-arg-reader (memfn constructor)]
-        (def macro-read-arg
-          (λ [reader character]
-            (.invoke macro-arg-reader reader character)))))
+    (def nullary-constructor?
+      #(and (nullary-constructor %) true))
     
-    (let [macro-character-reader (LispReader$CharacterReader.)]
-      (def macro-read-character
-        (λ [reader character]
-          (.invoke macro-character-reader reader character))))
+    (def nullary-readers
+      (map (λ [class]
+             {:class (symbol (.getName class))
+              :constructor (nullary-constructor class)
+              :read-class (class->read-class (.getSimpleName class))})
+           (filter (λ [class]
+                     (and (re-find #"Reader$" (.getSimpleName class))
+                          (nullary-constructor? class)))
+                   (into '() (:declaredClasses (bean LispReader))))))
     
-    (let [macro-comment-reader (LispReader$CommentReader.)]
-      (def macro-read-comment
-        (λ [reader character]
-          (.invoke macro-comment-reader reader character))))
+    ;;; Gather a list of these somehow for a dynamic API, or can we do
+    ;;; some namespace-tricks?
+    (defmacro def-read-macros []
+      `(do ~@(map (λ [{class :class
+                       constructor :constructor
+                       read-class :read-class}]
+                    `(let [constructor# (nullary-constructor ~class)]
+                       (.setAccessible constructor# true)
+                       (let [class-reader# (.newInstance constructor# nil)]
+                         (def ~read-class
+                           (λ [reader# character#]
+                             (.invoke class-reader# reader# character#))))))
+                  nullary-readers)))
     
+    (def-read-macros)
+    
+    ;;; Couple of unary exceptions
     (let [macro-deref-reader (LispReader$WrappingReader. 'deref)]
       (def macro-read-deref
         (λ [reader character]
           (.invoke macro-deref-reader reader character))))
-    
-    (let [macro-discard-reader (LispReader$DiscardReader.)]
-      (def macro-read-discard
-        (λ [reader character]
-          (.invoke macro-discard-reader reader character))))
-    
-    (let [macro-eval-reader (LispReader$EvalReader.)]
-      (def macro-read-eval
-        (λ [reader character]
-          (.invoke macro-eval-reader reader character))))
-    
-    (let [macro-fn-reader (LispReader$FnReader.)]
-      (def macro-read-fn
-        (λ [reader character]
-          (.invoke macro-fn-reader reader character))))
-    
-    (let [macro-list-reader (LispReader$ListReader.)]
-      (def macro-read-list
-        (λ [reader character]
-          (.invoke macro-list-reader reader character))))
-    
-    (let [macro-map-reader (LispReader$MapReader.)]
-      (def macro-read-map
-        (λ [reader character]
-          (.invoke macro-map-reader reader character))))
-    
-    (let [macro-meta-reader (LispReader$MetaReader.)]
-      (def macro-read-meta
-        (λ [reader character]
-          (.invoke macro-meta-reader reader character))))
     
     (let [macro-quote-reader (LispReader$WrappingReader. 'quote)]
       (def macro-read-quote
         (λ [reader character]
           (.invoke macro-quote-reader reader character))))
     
-    (let [macro-regex-reader (LispReader$RegexReader.)]
-      (def macro-read-regex
-        (λ [reader character]
-          (.invoke macro-regex-reader reader character))))
+    (letfn [(rotate [character]
+              (char (+ (mod (+ (- (int character) 97) 13) 26) 97)))]
+      (def rot13
+        "Only works for lower case letters."
+        (λ [string] (apply str (map rotate string)))))
     
-    (let [macro-set-reader (LispReader$SetReader.)]
-      (def macro-read-set
-        (λ [reader character]
-          (.invoke macro-set-reader reader character))))
+    (defn macro-read-rot13
+      [reader character]
+      (let [string (macro-read-string reader character)]
+        (rot13 string)))
     
-    (let [macro-string-reader (LispReader$StringReader.)]
-      (def macro-read-string
-        (λ [reader character]
-          (.invoke macro-string-reader reader character))))
+    (set-macro-character \" macro-read-rot13)
+    (println "hello")
     
-    (let [macro-syntax-quote-reader (LispReader$SyntaxQuoteReader.)]
-      (def macro-read-syntax-quote
-        (λ [reader character]
-          (.invoke macro-syntax-quote-reader reader character))))
+    (is (= "uryyb" (apply str '(\h \e \l \l \o))))
     
-    (let [macro-unmatched-delimiter-reader (LispReader$UnmatchedDelimiterReader.)]
-      (def macro-read-unmatched-delimiter
-        (λ [reader character]
-          (.invoke macro-unmatched-delimiter-reader reader character))))
-    
-    (let [constructor (nullary-constructor LispReader$UnquoteReader)]
-      (.setAccessible constructor true)
-      (let [macro-unquote-reader (memfn constructor)]
-        (def macro-unquote-arg
-          (λ [reader character]
-            (.invoke macro-unquote-reader reader character)))))
-    
-    (let [macro-unreadable-reader (LispReader$UnreadableReader.)]
-      (def macro-read-unreadable
-        (λ [reader character]
-          (.invoke macro-unreadable-reader reader character))))
-    
-    (let [macro-vector-reader (LispReader$VectorReader.)]
-      (def macro-read-vector
-        (λ [reader character]
-          (.invoke macro-vector-reader reader character))))
-    
-    (let [macro-var-reader (LispReader$VarReader.)]
-      (def macro-read-var
-        (λ [reader character]
-          (.invoke macro-var-reader reader character))))
-    
-    (let [macro-ctor-reader (LispReader$CtorReader.)]
-      (def macro-read-ctor
-        (λ [reader character]
-          (.invoke macro-ctor-reader reader character))))
-    
-    (set-macro-character \" macro-read-string)
-    (debug "harro")
   #+END_SRC
 * TODO Define readers programmatically.
   If we do this, funny enough, we don't actually have a guaranteed
@@ -318,7 +254,8 @@
                 constructor
                 (recur (cdr constructors))))))))
     
-    (def nullary-constructor? #(and (nullary-constructor %) true))
+    (def nullary-constructor?
+      #(and (nullary-constructor %) true))
     
     (def nullary-readers
       (map (λ [class]
@@ -334,11 +271,12 @@
       `(do ~@(map (λ [{class :class
                        constructor :constructor
                        read-class :read-class}]
-                    `(let [constructor# (nullary-constructor ~class)]
+                   `(let [constructor# (nullary-constructor ~class)]
                        (.setAccessible constructor# true)
-                       (let [class-reader# (memfn constructor#)]
+                       (let [class-reader# (.newInstance constructor# nil)]
                          (def ~read-class
                            (λ [character# reader#]
+                             (debug (class class-reader#))
                              (.invoke class-reader# reader# character#))))))
                   nullary-readers)))
     
@@ -363,9 +301,11 @@
      #_(map #(map bean (into '() %)) (map :declaredConstructors (map bean (:declaredClasses (bean LispReader)))))
      #_(map nullary-constructor (:declaredClasses (bean LispReader)))
      #_readers
-     #_(macroexpand '(def-read-macros))
-     macro-read-string
-     macro-read-var)
+     #_(macroexpand-1 '(def-read-macros))
+     ;; macro-read-string
+     ;; macro-read-var
+     ;; (macro-read-regex "2" "3")
+     )
     
   #+END_SRC
 
