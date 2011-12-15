@@ -5,4 +5,5 @@
                  [cadr "1.0.1-SNAPSHOT"]
                  [useful "0.7.5"]]
   :dev-dependencies [[debug "1.0.0-SNAPSHOT"]
-                     [add-classpath "1.0.3-SNAPSHOT"]])
+                     [add-classpath "1.0.3-SNAPSHOT"]]
+  :url "https://github.com/klutometis/reader-macros")
