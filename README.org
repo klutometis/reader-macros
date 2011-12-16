@@ -1,19 +1,32 @@
-* Motivation
-  
+* Motivation  
   Let's see if we can't inspire a few [[http://briancarper.net/blog/449/][pitchforks]] with a reader-macro
   package for Clojure.
 
   May Zeus forgive us for opening this [[http://en.wikipedia.org/wiki/Pandora's_box][πίθος]], &c.
 
 * Usage
-
   We tried to stay close to the semantics of [[http://clhs.lisp.se/Body/f_set_ma.htm][set-macro-character]] and
-  [[http://clhs.lisp.se/Body/f_set__1.htm][set-dispatch-macro-character]]: given a character $c$, you define a
-  function $f$ that takes a reader $r$ and $c$; and returns an object
-  that you've parsed from $r$.
+  [[http://clhs.lisp.se/Body/f_set__1.htm][set-dispatch-macro-character]]:
+
+  - =(set-macro-character character function)= :: Associates a
+       reader-macro with =character=, where =function= has the
+       signature =(fn [stream character] ...)=.
+       
+       Issuing e.g. =(set-macro-character \[ f)= will cause the reader
+       to call =(f stream \[)= when it encounters =[=.
+  - =(set-dispatch-macro-character character function)= :: Associates
+       a dispatch-macro with =character=, where =function= has the
+       signature =(fn [stream character] ...)=.
+       
+       Dispatch-macros are distinguished from reader-macros in that
+       they are activated by the dispatch prefix =#=; issuing
+       e.g. =(set-dispatch-macro-character \[ f)=, therefore, will
+       cause the reader to call =(f stream \[)= when it encounters
+       =#[=.
 
   To define a reader macro, for instance, that reverses strings; try:
 
+  #+BEGIN_QUOTE
   #+BEGIN_SRC clojure
     (use 'clojure.string)
     
@@ -24,9 +37,10 @@
     (println "hello, reader macros")
     => sorcam redaer ,olleh
   #+END_SRC
+  #+END_QUOTE
 
-  We've exposed a few utility functions from =clojure.lang.LispReader=
-  to help extract things from readers:
+  We've also exposed a few utility functions from
+  =clojure.lang.LispReader= to help extract things from readers:
 
   - =read-arg=
   - =read-character=
