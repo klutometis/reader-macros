@@ -29,7 +29,7 @@
 
   #+BEGIN_QUOTE
   #+BEGIN_SRC clojure
-    (use 'clojure.string)
+    (use '[clojure.string :only (reverse)])
     
     (set-macro-character \"
      (fn [reader quote]
