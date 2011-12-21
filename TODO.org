@@ -1,4 +1,5 @@
-* TODO [[http://briancarper.net/blog/449/][Example]] from Brian Carper
+* DONE [[http://briancarper.net/blog/449/][Example]] from Brian Carper
+  CLOSED: [2011-12-21 Wed 08:56]
   https://github.com/clojure/clojure/blob/master/src/jvm/clojure/lang/LispReader.java#L82
 
   #+BEGIN_SRC clojure :tangle macros.clj :shebang #!/usr/bin/env clj
@@ -35,7 +36,8 @@
     (is (= #U"Foo bar BAZ" "FOO BAR BAZ")
         (= U"Foo bar BAZ" "FOO BAR BAZ"))    
   #+END_SRC
-* TODO API
+* DONE API
+  CLOSED: [2011-12-21 Wed 08:56]
   According to [[http://www.bookshelf.jp/texi/onlisp/onlisp_18.html][this]], we have =set-macro-character=,
   =set-dispatch-macro-character=, etc.:
 
@@ -78,7 +80,8 @@
         }
     }
   #+END_SRC
-* TODO Convenience readers
+* DONE Convenience readers
+  CLOSED: [2011-12-21 Wed 08:56]
   See e.g. [[https://github.com/clojure/clojure/blob/master/src/jvm/clojure/lang/LispReader.java#L84][string-reader]]:
 
   #+BEGIN_SRC clojure
@@ -94,7 +97,8 @@
         (.invoke string-reader reader char)))
     
   #+END_SRC
-* TODO Implementation
+* DONE Implementation
+  CLOSED: [2011-12-21 Wed 08:56]
   #+BEGIN_SRC clojure :tangle reader-macros.clj :shebang #!/usr/bin/env clj
     (use 'add-classpath.core)
     (add-classpath "lib/*" "lib/dev/*") 
@@ -218,7 +222,10 @@
     ;; (is (= "uryyb" (apply str '(\h \e \l \l \o))))
     
   #+END_SRC
-* TODO Define readers programmatically.
+* DONE Define readers programmatically.
+  CLOSED: [2011-12-21 Wed 08:56]
+  - CLOSING NOTE [2011-12-21 Wed 08:56] \\
+    We did this for the niladic readers.
   If we do this, funny enough, we don't actually have a guaranteed
   API; that's bad, isn't it?
 
@@ -341,7 +348,10 @@
                 (list (.subSequence s prevend (.length s)))))))
          0)))
   #+END_SRC
-* TODO Fuck it, let's define the readers manually.
+* DONE Fuck it, let's define the readers manually.
+  CLOSED: [2011-12-21 Wed 08:56]
+  - CLOSING NOTE [2011-12-21 Wed 08:56] \\
+    We had to do this for a couple dyadic special-cases.
   We'll do something clever later, if we need to; we have a guaranteed
   API this way.
 

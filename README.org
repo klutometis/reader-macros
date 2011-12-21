@@ -1,8 +1,9 @@
 * Motivation  
   Let's see if we can't inspire a few [[http://briancarper.net/blog/449/][pitchforks]] with a reader-macro
-  package for Clojure.
+  package for Clojure; thanks to Brian Carper, by the way, for doing
+  fundamental work.
 
-  May Zeus forgive us for opening this [[http://en.wikipedia.org/wiki/Pandora's_box][πίθος]], &c.
+  Also, may Zeus forgive us for opening this [[http://en.wikipedia.org/wiki/Pandora's_box][πίθος]], &c.
 
 * Usage
   We tried to stay close to the semantics of [[http://clhs.lisp.se/Body/f_set_ma.htm][set-macro-character]] and
@@ -63,3 +64,17 @@
   - =read-unreadable=
   - =read-vector=
   - =read-var=
+
+* Installation
+
+  Add the following to your dependencies in =project.clj=:
+
+  #+BEGIN_SRC clojure
+    [reader-macros "1.0.0-SNAPSHOT"]
+  #+END_SRC
+
+  and use it followingly:
+
+  #+BEGIN_SRC clojure
+    (use 'reader-macros.core)
+  #+END_SRC
