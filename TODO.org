@@ -1,3 +1,41 @@
+* TODO Temporary scope
+  See this message from [[http://groups.google.com/group/clojure/msg/2251883413639b85?dmode=source][Aaron Cohen]]:
+
+  #+BEGIN_QUOTE
+  One thing I'd really want before I even considered using this would
+  be some way of restricting the scope of a reader macro to the
+  current file. As is, they just have way too much room to interfere
+  with your whole world. I'm not sure if that's possible without
+  modifying clojure.core though.
+  #+END_QUOTE
+
+  #+BEGIN_SRC clojure
+    (let-macro-characters [\" (fn (reader char)
+                                (reverse (macro-read-string reader quote)))]
+      ;; => sorcam redaer ,olleh
+      (println "hello, reader macros"))
+    
+    ;; => hello, reader macros
+    (println "hello, reader macros")
+  #+END_SRC
+
+  As opposed to, say:
+
+  #+BEGIN_SRC clojure
+    (with-macro-characters
+      {\" (fn (reader char)
+            (reverse (macro-read-string reader quote)))}
+      (λ []
+        ;; => sorcam redaer ,olleh
+        (println "hello, reader macros")))
+    
+    ;; => hello, reader macros
+    (println "hello, reader macros")
+  #+END_SRC
+
+  see [[http://groups.google.com/group/clojure/browse_thread/thread/6d206428681861a7][the which]].
+
+  See, also, [[http://groups.google.com/group/clojure/browse_thread/thread/f1148b3569e8d275][this]] from 2008.
 * DONE [[http://briancarper.net/blog/449/][Example]] from Brian Carper
   CLOSED: [2011-12-21 Wed 08:56]
   https://github.com/clojure/clojure/blob/master/src/jvm/clojure/lang/LispReader.java#L82

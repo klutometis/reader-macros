@@ -1,4 +1,4 @@
-* Motivation  
+* Motivation
   Let's see if we can't inspire a few [[http://briancarper.net/blog/449/][pitchforks]] with a reader-macro
   package for Clojure; thanks to Brian Carper, by the way, for doing
   fundamental work.
