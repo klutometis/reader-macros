@@ -1,5 +1,5 @@
 (ns reader-macros.core
-  (:use [cadr.core :only (car cdr)]
+  (:use [cadr :only (car cdr)]
         [lambda.core :only (λ)]
         [clojure.string :only (lower-case join)])
   (:import (clojure.lang LispReader

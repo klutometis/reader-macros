@@ -70,7 +70,7 @@
   Add the following to your dependencies in =project.clj=:
 
   #+BEGIN_SRC clojure
-    [reader-macros "1.0.0-SNAPSHOT"]
+    [reader-macros "1.0.1"]
   #+END_SRC
 
   and use it followingly:
