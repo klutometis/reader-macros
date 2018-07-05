@@ -156,9 +156,9 @@
 (comment
   ;;examples
   ;;reversed strings from blog...
-  (def reversed-string-reader
-    (fn [reader quote opts pending-forms]
-      (clojure.string/reverse (macro-read-string  reader quote opts pending-forms))))
+  (defn reversed-string-reader
+    [reader quote opts pending-forms]
+      (clojure.string/reverse (macro-read-string  reader quote opts pending-forms)))
 
   (def testdata
     "\"Hello!  This is a string of text, hopefully it's
@@ -166,9 +166,8 @@
   (with-macro-character \" reversed-string-reader
     (read-string testdata))
   
-  (def reversed-list-reader
-    (fn [reader quote opts pending-forms]
-      (reverse (macro-read-list  reader quote opts pending-forms))))
+  (defn reversed-list-reader [reader quote opts pending-forms]
+      (reverse (macro-read-list  reader quote opts pending-forms)))
 
   (def testlist
     "(a b c d)")
@@ -176,27 +175,30 @@
   (with-macro-character \( reversed-list-reader
     (read-string testlist))
 
-  (def read-list (fn [reader quote opts pending-forms]
-      (seq (read-delimited-list \) reader false))))
+  (defn read-list [reader quote opts pending-forms]
+      (seq (read-delimited-list \) reader false)))
 
   (with-macro-character \( read-list
     (read-string testlist))
 
- (def read-vector (fn [reader quote opts pending-forms]
-      (vec (read-delimited-list \] reader false))))
+ (defn read-vector [reader quote opts pending-forms]
+      (vec (read-delimited-list \] reader false)))
   
   (def testvector
-      "[a b c d]")
+    "[a b c d]")
+
+  (with-macro-character \[ read-vector
+    (read-string testvector))
 
   ;;maybe your vector is "really"
   ;;a sequence or a set!  Let the reader decide!
-  (def nondeterministic-reader
-    (fn [reader quote opts pending-forms]
+  (defn nondeterministic-reader
+    [reader quote opts pending-forms]
       (let [stuff (read-delimited-list \] reader false)]
         (case (rand-nth [:vector :list :set])
           :vector   (vec stuff)
           :list      (into '() stuff)
-          (set stuff)))))
+          (set stuff))))
 
   (with-macro-character \[ nondeterministic-reader 
     (read-string testvector))

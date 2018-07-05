@@ -56,9 +56,9 @@
   To define a reader macro, for instance, that reverses strings; try:
 
   #+BEGIN_SRC clojure
-  (def reversed-string-reader
-    (fn [reader quote opts pending-forms]
-      (clojure.string/reverse (macro-read-string  reader quote opts pending-forms))))
+  (defn reversed-string-reader
+     [reader quote opts pending-forms]
+      (clojure.string/reverse (macro-read-string  reader quote opts pending-forms)))
   
   (def testdata
     "\"Hello!  This is a string of text, hopefully it's
@@ -137,9 +137,9 @@
   
  We can define simple readers as name functions, then use them:
  #+BEGIN_SRC clojure
- (def reversed-string-reader
-    (fn [reader quote opts pending-forms]
-      (clojure.string/reverse (macro-read-string  reader quote opts pending-forms))))
+ (defn reversed-string-reader
+    [reader quote opts pending-forms]
+      (clojure.string/reverse (macro-read-string  reader quote opts pending-forms)))
 
   (def testdata
     "\"Hello!  This is a string of text, hopefully it's
@@ -151,9 +151,9 @@
  Let's mess with lists by reversing the order in which they're
  supposed to be read!
  #+BEGIN_SRC clojure
-  (def reversed-list-reader
-    (fn [reader quote opts pending-forms]
-      (reverse (macro-read-list  reader quote opts pending-forms))))
+  (defn reversed-list-reader
+    [reader quote opts pending-forms]
+      (reverse (macro-read-list  reader quote opts pending-forms)))
 
   (def testlist
     "(a b c d)")
@@ -173,8 +173,8 @@
   helper function:
  
   #+BEGIN_SRC clojure
-  (def read-list (fn [reader quote opts pending-forms]
-      (seq (read-delimited-list \) reader false))))
+  (defn read-list [reader quote opts pending-forms]
+      (seq (read-delimited-list \) reader false)))
 
   (with-macro-character \( read-list
     (read-string testlist))
@@ -184,8 +184,8 @@
  For completeness, we can read vectors (or anything) 
  just as easily:
  #+BEGIN_SRC clojure
- (def read-vector (fn [reader quote opts pending-forms]
-      (vec (read-delimited-list \] reader false))))
+ (defn read-vector [reader quote opts pending-forms]
+      (vec (read-delimited-list \] reader false)))
   
  (def testvector
       "[a b c d]")
@@ -201,13 +201,13 @@
  #+BEGIN_SRC clojure
   ;;maybe your vector is "really"
   ;;a sequence or a set!  Let the reader decide!
-  (def nondeterministic-reader
-    (fn [reader quote opts pending-forms]
+  (defn nondeterministic-reader
+     [reader quote opts pending-forms]
       (let [stuff (read-delimited-list \] reader false)]
         (case (rand-nth [:vector :list :set])
           :vector   (vec stuff)
           :list      (into '() stuff)
-          (set stuff)))))
+          (set stuff))))
 
   (with-macro-character \[ nondeterministic-reader 
     (read-string testvector))
