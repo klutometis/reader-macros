@@ -25,21 +25,73 @@
        cause the reader to call =(f stream \[)= when it encounters
        =#[=.
 
+  There are multiple convenience macros to aid in unscrewing the 
+  LispReader:
+  
+   - =(with-macro-character character function & body)= :: Associates a
+       reader-macro with =character=, where =function= has the
+       signature =(fn [stream character opts pending-forms] ...)=.
+       
+       Evaluates body in the context of an altered read-table.
+
+   - =(set-dispatch-macro-character character function)= :: Associates
+       a dispatch-macro with =character=, where =function= has the
+       signature =(fn [stream character opts pending-forms] ...)=.
+       
+       Dispatch-macros are distinguished from reader-macros in that
+       they are activated by the dispatch prefix =#=; issuing
+       e.g. =(set-dispatch-macro-character \[ f)=, therefore, will
+       cause the reader to call =(f stream \[)= when it encounters
+       =#[=.
+	
+       Evaluates body in the context of an altered read-table.
+
+  Notably, the LispReader in clojure (and hence most reader functions) 
+  take 4 args: =[reader quote opts pending-forms]=.  Where possible,
+  we've limited the API to use the first two (ala Common Lisp).
+  The =opts= and =pending-forms= args are related to conditional 
+  compilation, and currently aren't a concern, other than the 
+  arity they introduce to reader functions.  
+
   To define a reader macro, for instance, that reverses strings; try:
 
-  #+BEGIN_QUOTE
   #+BEGIN_SRC clojure
-    (use '[clojure.string :only (reverse)])
-    
+  (defn reversed-string-reader
+     [reader quote opts pending-forms]
+      (clojure.string/reverse (macro-read-string  reader quote opts pending-forms)))
+  
+  (def testdata
+    "\"Hello!  This is a string of text, hopefully it's
+     sdrawkcab\"")
+
+  (with-macro-character \" reversed-string-reader
+    (read-string testdata))
+
+  "backwards     \ns'ti yllufepoh ,txet fo gnirts a si sihT  !olleH"
+  #+END_SRC
+
+  There's a convenient with-read-table function to alter 
+  the read-table (currently does not target dispatch macros):
+
+  
+  #+BEGIN_SRC clojure        
     (set-macro-character \"
-     (fn [reader quote]
-       (reverse (macro-read-string reader quote))))
-    
+     (fn [reader quote _ _]
+       (clojure.string/reverse (macro-read-string reader quote))))    
     (println "hello, reader macros")
     => sorcam redaer ,olleh
   #+END_SRC
-  #+END_QUOTE
+  
 
+  Finally, if everything blows up and you don't
+  want to remain in a reader-macroed world anymore,
+  you can get back the default read table by:
+  
+  
+  #+BEGIN_SRC clojure
+  (reset-read-tables!)
+  #+END_SRC
+  
   We've also exposed a few utility functions from
   =clojure.lang.LispReader= to help extract things from readers:
 
@@ -70,11 +122,125 @@
   Add the following to your dependencies in =project.clj=:
 
   #+BEGIN_SRC clojure
-    [reader-macros "1.0.1"]
+    [reader-macros "1.0.2"]
   #+END_SRC
 
   and use it followingly:
 
   #+BEGIN_SRC clojure
+    (require '[reader-macros.core :refer :all])
+    ;;or, deprecated
     (use 'reader-macros.core)
   #+END_SRC
+
+* More Examples
+  
+ We can define simple readers as name functions, then use them:
+ #+BEGIN_SRC clojure
+ (defn reversed-string-reader
+    [reader quote opts pending-forms]
+      (clojure.string/reverse (macro-read-string  reader quote opts pending-forms)))
+
+  (def testdata
+    "\"Hello!  This is a string of text, hopefully it's
+     sdrawkcab\"")
+  (with-macro-character \" reversed-string-reader
+    (read-string testdata))
+  ;;"backwards     \ns'ti yllufepoh ,txet fo gnirts a si sihT  !olleH"
+  #+END_SRC
+ Let's mess with lists by reversing the order in which they're
+ supposed to be read!
+ #+BEGIN_SRC clojure
+  (defn reversed-list-reader
+    [reader quote opts pending-forms]
+      (reverse (macro-read-list  reader quote opts pending-forms)))
+
+  (def testlist
+    "(a b c d)")
+  
+  (with-macro-character \( reversed-list-reader
+    (read-string testlist))
+  ;;(d c b a)
+  #+END_SRC
+
+  For reading generic collections, we can use read-dimilited-list,
+  which will return a vector by default. Maybe we'll rename it 
+  in the future to conform more closely with the LispReader.
+  For now, you can coerce the result since vectors support the
+  seq abstraction.  
+  
+  This example merely parses lists using the aforementioned
+  helper function:
+ 
+  #+BEGIN_SRC clojure
+  (defn read-list [reader quote opts pending-forms]
+      (seq (read-delimited-list \) reader false)))
+
+  (with-macro-character \( read-list
+    (read-string testlist))
+  ;;(a b c d)
+  #+END_SRC
+
+ For completeness, we can read vectors (or anything) 
+ just as easily:
+ #+BEGIN_SRC clojure
+ (defn read-vector [reader quote opts pending-forms]
+      (vec (read-delimited-list \] reader false)))
+  
+ (def testvector
+      "[a b c d]")
+ (with-macro-character \[ read-vector
+    (read-string testvector))
+ ;;[a b c d]
+ #+END_SRC
+
+ Now onto the fun!
+ Let's change the semantics of reading 
+ and randomly change vectors into other data 
+ structures...
+ #+BEGIN_SRC clojure
+  ;;maybe your vector is "really"
+  ;;a sequence or a set!  Let the reader decide!
+  (defn nondeterministic-reader
+     [reader quote opts pending-forms]
+      (let [stuff (read-delimited-list \] reader false)]
+        (case (rand-nth [:vector :list :set])
+          :vector   (vec stuff)
+          :list      (into '() stuff)
+          (set stuff))))
+
+  (with-macro-character \[ nondeterministic-reader 
+    (read-string testvector))
+  ;;#{a c b d} ;you may get a list or a vector!
+
+  ;;run it many times to see the spread...
+  (with-macro-character \[ nondeterministic-reader 
+    (frequencies (repeatedly 1000 #(read-string testvector))))
+  ;;{(d c b a) 332, [a b c d] 323, #{a c b d} 345}
+  #+END_SRC
+
+  Finally, let's combine our changes to both readers 
+  into a new read-table that's convenient to use:
+  #+BEGIN_SRC clojure
+  (def string-vector "[\"hello\" \"world\" :a :b :c]")
+
+  (defn wierd-clojure!
+    ([txt]
+  ;;tie it all together with a read-table that jacks
+  ;;everything up!
+    (with-read-table {\" reversed-string-reader
+                      \[ nondeterministic-reader}
+      (read-string txt)))
+    ([] (wierd-clojure! string-vector)))
+
+  ;;reader-macros.core> (wierd-clojure!)
+  ;; (:c :b :a "dlrow" "olleh")
+  ;; reader-macros.core> (wierd-clojure!)
+  ;; ["olleh" "dlrow" :a :b :c]
+  ;; reader-macros.core> (wierd-clojure!)
+  ;; #{:c "dlrow" :b "olleh" :a}
+  ;; reader-macros.core> (wierd-clojure!)
+  ;; (:c :b :a "dlrow" "olleh")
+  ;; reader-macros.core> (wierd-clojure!)
+  ;; ["olleh" "dlrow" :a :b :c]
+     #+END_SRC
