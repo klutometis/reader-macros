@@ -10,7 +10,7 @@
     (λ [string] (apply str (map rotate string)))))
 
 (defn macro-read-rot13
-  [reader character]
+  [reader character _ _]
   (let [string (macro-read-string reader character)]
     (rot13 string)))
 

@@ -6,8 +6,8 @@
 ;; Make the translation tables accessible.
 (def macros
   (let [m (.getDeclaredField LispReader "macros")
-        _ (.setAccessible macros true)]
-    (.get macros nil)))
+        _ (.setAccessible m true)]
+    (.get m nil)))
 
 (def +default-macros+ (aclone macros))
 
@@ -104,6 +104,9 @@
 
 ;;; Gather a list of these somehow for a dynamic API, or can we do
 ;;; some namespace-tricks?
+(def +default-opts+  {:features #{"clj"}
+                      :eofthrow :eof})
+
 (defmacro def-read-macros []
   `(do ~@(map (fn [{class       :class
                     constructor :constructor
@@ -130,9 +133,6 @@
     (.invoke macro-quote-reader reader character opts pending-forms)))
 
 ;;;; Some more utility functions from LispReader
-(def +default-opts+  {:features #{"clj"}
-                      :eofthrow :eof})
-
 (defn read-delimited-list
   "Interestingly enough, this returns a vector.  Clojure's reader
    uses vector's internally, likely because they're simpler to conj onto?"
